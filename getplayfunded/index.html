@@ -744,6 +744,119 @@
   </div>
 
   <script>
+    // ========================================
+    // 🔗 OFFER LINKS - EDIT HERE
+    // ========================================
+    const OFFER_LINKS = {
+      below21: 'https://www.ch6rrl8trk.com/3KFRZ6/3TJ7N7/?sub1=play',
+      over21: 'https://www.ch6rrl8trk.com/3KFRZ6/9B9DM/'
+    };
+
+    // ========================================
+    // 📊 DISCORD WEBHOOK - EDIT HERE
+    // ========================================
+    const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1449634410356932743/RCNoDQzortk5aJy5nKC4fCMMJgFu0dn5wUzJXhTg0URGTeoJiXs28-UMuTFaGig--Ik1";
+
+    // ========================================
+    // 📊 TRACKING FUNCTIONS
+    // ========================================
+    const __lpStart = Date.now();
+
+    function secondsOnPage() {
+      return Math.max(0, Math.round((Date.now() - __lpStart) / 1000));
+    }
+
+    function getOrCreateDeviceId() {
+      const key = "lp_device_id";
+      let id = localStorage.getItem(key);
+      if (!id) {
+        id = crypto?.randomUUID?.() || ("dev_" + Math.random().toString(16).slice(2) + Date.now().toString(16));
+        localStorage.setItem(key, id);
+      }
+      return id;
+    }
+
+    function bumpCounter(key) {
+      const current = Number(localStorage.getItem(key) || "0") + 1;
+      localStorage.setItem(key, String(current));
+      return current;
+    }
+
+    function makeClickId() {
+      return crypto?.randomUUID?.() || ("clk_" + Math.random().toString(16).slice(2) + Date.now().toString(16));
+    }
+
+    function getCtaInfo(age) {
+      const btnId = age === 'below21' ? 'apple-cta' : 'standard-cta';
+      const btn = document.getElementById(btnId);
+      const href = OFFER_LINKS[age === 'below21' ? 'below21' : 'over21'];
+      
+      return {
+        shown: age === 'below21' ? 'under21' : 'over21',
+        href: String(href).slice(0, 900)
+      };
+    }
+
+    function buildDiscordPayload(choice) {
+      const url = new URL(window.location.href);
+      const deviceId = getOrCreateDeviceId();
+      const clickId = makeClickId();
+
+      const totalClicks = bumpCounter("lp_clicks_total");
+      const choiceClicks = bumpCounter(choice === "over21" ? "lp_clicks_over21" : "lp_clicks_under21");
+
+      const cta = getCtaInfo(choice === "over21" ? "21plus" : "below21");
+
+      const clickedPretty = choice === "over21" ? "🟢 I'm 21+" : "🟡 I'm under 21";
+      const shownPretty = cta.shown === "over21" ? "🟢 21+ CTA" : "🟡 Under-21 CTA";
+
+      return {
+        username: "PlayFul Rewards Tracker",
+        embeds: [{
+          title: "✅ Age Selection Click",
+          description: `**Selected:** ${clickedPretty}`,
+          color: choice === "over21" ? 0x00D369 : 0xFFD700,
+          fields: [
+            { name: "🆔 Click ID", value: `\`${clickId}\``, inline: false },
+            { name: "📟 Device ID", value: `\`${deviceId}\``, inline: false },
+            { name: "⏱️ Time on page", value: `\`${secondsOnPage()}s\``, inline: true },
+            { name: "🔁 Device clicks", value: `Total: \`${totalClicks}\`\nChoice: \`${choiceClicks}\``, inline: true },
+            { name: "🎯 CTA shown", value: `${shownPretty}\n\`${cta.href}\``, inline: false },
+            { name: "📄 Page", value: `Path: \`${url.pathname}\`\nQuery: \`${url.search || "(none)"}\``, inline: false },
+            {
+              name: "📱 Screen",
+              value: `Screen: \`${screen.width}x${screen.height}\`\nViewport: \`${innerWidth}x${innerHeight}\`\nDPR: \`${window.devicePixelRatio || 1}\``,
+              inline: true
+            },
+            {
+              name: "🌐 Browser",
+              value: `Lang: \`${navigator.language || "?"}\`\nTZ: \`${Intl.DateTimeFormat().resolvedOptions().timeZone || "?"}\`\nPlatform: \`${navigator.platform || "?"}\``,
+              inline: true
+            },
+            { name: "🔗 Referrer", value: `\`${(document.referrer || "direct").slice(0, 240)}\``, inline: false },
+            { name: "🧾 User Agent", value: `\`${(navigator.userAgent || "unknown").slice(0, 240)}\``, inline: false }
+          ],
+          footer: { text: "Client-side tracking (no IP/geo)" },
+          timestamp: new Date().toISOString()
+        }]
+      };
+    }
+
+    function sendToDiscord(choice) {
+      if (!DISCORD_WEBHOOK_URL) return;
+      
+      const payload = buildDiscordPayload(choice);
+      
+      fetch(DISCORD_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).catch(err => console.log('Tracking error:', err));
+    }
+
+    // ========================================
+    // 🎯 MAIN APP LOGIC
+    // ========================================
     (function() {
       'use strict';
 
@@ -752,13 +865,13 @@
           sectionId: 'step2-apple',
           pageTitle: 'Get $750 Towards Apple Pay',
           buttonId: 'apple-cta',
-          redirectUrl: 'https://www.ch6rrl8trk.com/3KFRZ6/3TJ7N7/?sub1=play'
+          redirectUrl: OFFER_LINKS.below21
         },
         '21plus': {
           sectionId: 'step2-standard',
           pageTitle: 'PlayFul Rewards: Get Paid Real Money',
           buttonId: 'standard-cta',
-          redirectUrl: 'https://www.ch6rrl8trk.com/3KFRZ6/9B9DM/'
+          redirectUrl: OFFER_LINKS.over21
         }
       };
 
@@ -781,7 +894,13 @@
       function redirect(age) {
         const cfg = config[age];
         if (cfg && cfg.redirectUrl) {
-          window.location.href = cfg.redirectUrl;
+          // Send tracking data
+          sendToDiscord(age === 'below21' ? 'under21' : 'over21');
+          
+          // Small delay to ensure tracking sends
+          setTimeout(() => {
+            window.location.href = cfg.redirectUrl;
+          }, 100);
         }
       }
 
