@@ -755,12 +755,46 @@
 
   <script>
     // ========================================
-    // 🔗 OFFER LINKS - EDIT HERE
-    // ========================================
-    const OFFER_LINKS = {
-      below21: 'https://www.ch6rrl8trk.com/3KFRZ6/3TJ7N7/?sub1=play272am',
-      over21: 'https://www.ch6rrl8trk.com/3KFRZ6/9B9DM/?sub1=12272am'
-    };
+// 🔗 OFFER LINKS - EDIT HERE
+// ========================================
+const OFFER_LINKS = {
+  below21: 'https://www.ch6rrl8trk.com/3KFRZ6/3TJ7N7/',
+  over21: 'https://www.ch6rrl8trk.com/3KFRZ6/9B9DM/'
+};
+
+// Add this function to get URL parameters
+function getUrlParameter(name) {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get(name);
+}
+
+// Modify the redirect function to append ad_name to sub1
+function redirect(age) {
+  const cfg = config[age];
+  if (cfg && cfg.redirectUrl) {
+    // Get ad_name from URL parameter
+    const adName = getUrlParameter('ad_name') || '';
+    
+    // Build final URL with ad_name in sub1 parameter
+    let finalUrl = cfg.redirectUrl;
+    if (adName) {
+      finalUrl += `?sub1=${encodeURIComponent(adName)}`;
+    }
+    
+    // Send tracking data
+    sendToDiscord(age === 'below21' ? 'under21' : 'over21');
+    
+    // Track TikTok conversion ONLY for 21+ clicks
+    if (age === '21plus') {
+      trackTikTokConversion();
+    }
+    
+    // Small delay to ensure tracking sends
+    setTimeout(() => {
+      window.location.href = finalUrl;
+    }, 150);
+  }
+}
 
     // ========================================
     // 📊 DISCORD WEBHOOK - EDIT HERE
